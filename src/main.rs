@@ -3,6 +3,8 @@ use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::env;
+use tokio::time::{Duration, Timeout, timeout};
+use tokio_tungstenite::WebSocketStream;
 use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
@@ -34,13 +36,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let subscribe_json = serde_json::to_string(&subscribe_msg)?;
     ws.send(Message::Text(subscribe_json.into())).await?;
 
-    while let Some(msg) = ws.next().await {
-        let msg = msg?;
-        match msg {
-            Message::Text(text) => println!("Recieved: {}", text),
-            Message::Close(_) => break,
-            _ => break,
+    let result = timeout(Duration::from_secs(5), async {
+        while let Some(msg) = ws.next().await {
+            let msg = msg?;
+            match msg {
+                Message::Text(text) => println!("Recieved: {}", text),
+                Message::Close(close_frame) => {
+                    println!("Connection closed: {:?}", close_frame);
+                    break;
+                }
+                _ => continue,
+            }
         }
+        Ok::<(), Box<dyn std::error::Error>>(())
+    })
+    .await;
+    match result {
+        Ok(_) => println!("Loop completed"),
+        Err(_) => println!("Loop closed with error"),
     }
 
     ws.close(None).await?;
