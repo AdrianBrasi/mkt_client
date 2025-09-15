@@ -1,0 +1,15 @@
+[package]
+name = "mkt_client"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+dotenv = "0.15.0"
+futures-util = "0.3.31"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0.145"
+tokio = { version = "1.47.1", features = ["full"] }
+tokio-tungstenite = { version = "0.27.0", features = ["native-tls"] }
+
+[lints.rust]
+unused = "allow"
